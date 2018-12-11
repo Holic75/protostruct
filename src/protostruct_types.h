@@ -21,13 +21,38 @@ namespace field_types
 }
 
 
+template <class FT, class T, class Enc = T> class ProtoStructEntry;
 
-template <class FT, class T> class ProtoStructEntry;
+namespace aux
+{
+template <class T, class X>
+class ProtoStructEntryBase
+{
+    protected:
+        X value_;
+    public:
+        void set(const T& val) { value_ = static_cast<X>(val);};
+        T get() const {return static_cast<T>(value_);};
+        size_t encoded_size() const {return value_.encoded_size();};
 
+        ProtoStructEntryBase& operator=(const T& new_val)
+        {
+            value_ = static_cast<X>(new_val);
+            return *this;
+        }
+
+        ProtoStructEntryBase& operator=(T&& new_val)
+        {
+            value_ = static_cast<X>(new_val);
+            return *this;
+        }
+
+        operator T() const { return static_cast<T>(value_); };       
+};
 
 
 template <class T>
-class ProtoStructEntry<field_types::required, T>
+class ProtoStructEntryBase<T, T>
 {
     protected:
         T value_;
@@ -35,41 +60,63 @@ class ProtoStructEntry<field_types::required, T>
         void set(const T& val) { value_ = val;};
         const T& get() const {return value_;};
         T& ref() {return value_;};
+
         size_t encoded_size() const {return value_.encoded_size();};
 
-        void* encode(void* buffer) const
-        {
-            return value_.encode(buffer);
-        }
-        
-        const void* decode(const void* buffer)
-        {
-            return value_.decode(buffer);
-        }
-
-        ProtoStructEntry& operator=(const T& new_val)
+        ProtoStructEntryBase& operator=(const T& new_val)
         {
             value_ = new_val;
+            return *this;
         }
 
-        ProtoStructEntry& operator=(T&& new_val)
+        ProtoStructEntryBase& operator=(T&& new_val)
         {
             value_ = new_val;
+            return *this;
         }
 
         operator T() const { return value_; };
 };
 
+}
 
-template <>
-class ProtoStructEntry<field_types::required, uint8_t>
+template <class T, class X>
+class ProtoStructEntry<field_types::required, T, X>: public aux::ProtoStructEntryBase<T,X>
+{
+    public:
+        void* encode(void* buffer) const
+        {
+            return this->value_.encode(buffer);
+        }
+        
+        const void* decode(const void* buffer)
+        {
+            return this->value_.decode(buffer);
+        }
+
+        ProtoStructEntry& operator=(const T& new_val)
+        {
+            aux::ProtoStructEntryBase<T,X>::operator=(new_val);
+            return *this;
+        }
+
+        ProtoStructEntry& operator=(T&& new_val)
+        {
+            aux::ProtoStructEntryBase<T,X>::operator=(new_val);
+            return *this;
+        }
+
+};
+
+
+template <class T>
+class ProtoStructEntry<field_types::required, T, uint8_t>
 {
     protected:
         uint8_t value_;
     public:
-        void set(uint8_t val) { value_ = val;};
-        const uint8_t& get() const {return value_;};
-        uint8_t& ref() {return value_;};
+        void set(const T& val) { value_ = static_cast<uint8_t>(val);};
+        const T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(uint8_t);};
 
         void* encode(void* buffer) const
@@ -84,24 +131,24 @@ class ProtoStructEntry<field_types::required, uint8_t>
             return reinterpret_cast<const uint8_t*>(buffer) + 1;
         }
 
-        ProtoStructEntry& operator=(const uint8_t new_val)
+        ProtoStructEntry& operator=(const T& new_val)
         {
-            value_ = new_val;
+            value_ = static_cast<uint8_t>(new_val);
+            return *this;
         }
 
-        operator uint8_t() const { return value_; };
+        operator T() const { return static_cast<T>(value_); };
 };
 
 
-template <>
-class ProtoStructEntry<field_types::required, int8_t>
+template <class T>
+class ProtoStructEntry<field_types::required, T, int8_t>
 {
     protected:
         int8_t value_;
     public:
-        void set(int8_t val) { value_ = val;};
-        const int8_t& get() const {return value_;};
-        int8_t& ref() {return value_;};
+        void set(const T& val) { value_ = static_cast<int8_t>(val);};
+        const T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(int8_t);};
 
         void* encode(void* buffer) const
@@ -121,24 +168,24 @@ class ProtoStructEntry<field_types::required, int8_t>
             return reinterpret_cast<const uint8_t*>(buffer) + 1;
         }
 
-        ProtoStructEntry& operator=(const int8_t new_val)
+        ProtoStructEntry& operator=(const T& new_val)
         {
-            value_ = new_val;
+            value_ = static_cast<int8_t>(new_val);
+            return *this;
         }
 
-        operator int8_t() const { return value_; };
+        operator T() const { return static_cast<T>(value_); };
 };
 
 
-template <>
-class ProtoStructEntry<field_types::required, uint32_t>
+template <class T>
+class ProtoStructEntry<field_types::required, T, uint32_t>
 {
     protected:
         uint32_t value_;
     public:
-        void set(uint32_t val) { value_ = val;};
-        const uint32_t& get() const {return value_;};
-        uint32_t& ref() {return value_;};
+        void set(const T& val) { value_ = static_cast<uint32_t>(val);};
+        T get() const {return value_;};
         size_t encoded_size() const {return sizeof(uint32_t);};
 
         void* encode(void* buffer) const
@@ -163,25 +210,24 @@ class ProtoStructEntry<field_types::required, uint32_t>
             return buf + 4;
         }
 
-        ProtoStructEntry& operator=(const uint32_t new_val)
+        ProtoStructEntry& operator=(const T& new_val)
         {
-            value_ = new_val;
+            value_ = static_cast<uint32_t>(new_val);
 			return *this;
         }
 
-        operator uint32_t() const { return value_; };
+        operator T() const { return static_cast<T>(value_); };
 };
 
 
-template <>
-class ProtoStructEntry<field_types::required, int32_t>
+template <class T>
+class ProtoStructEntry<field_types::required, T, int32_t>
 {
     protected:
         int32_t value_;
     public:
-        void set(int32_t val) { value_ = val;};
-        const int32_t& get() const {return value_;};
-        int32_t& ref() {return value_;};
+        void set(const T& val) { value_ = static_cast<T>(val);};
+        T get() const {return value_;};
         size_t encoded_size() const {return sizeof(int32_t);};
 
         void* encode(void* buffer) const
@@ -213,25 +259,24 @@ class ProtoStructEntry<field_types::required, int32_t>
             return buf + 4;
         }
         
-        ProtoStructEntry& operator=(const int32_t new_val)
+        ProtoStructEntry& operator=(const T& new_val)
         {
-            value_ = new_val;
+            value_ = static_cast<int32_t>(new_val);
 			return *this;
         }
 
-        operator int32_t() const { return value_; };
+        operator T() const { return static_cast<T>(value_); };
 };
 
 
-template <>
-class ProtoStructEntry<field_types::required, uint16_t>
+template <class T>
+class ProtoStructEntry<field_types::required, T, uint16_t>
 {
     protected:
         uint16_t value_;
     public:
-        void set(uint16_t val) { value_ = val;};
-        const uint16_t& get() const {return value_;};
-        uint16_t& ref() {return value_;};
+        void set(const T& val) { value_ = static_cast<uint16_t>(val);};
+        T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(uint16_t);};
 
         void* encode(void* buffer) const
@@ -252,25 +297,24 @@ class ProtoStructEntry<field_types::required, uint16_t>
             return buf + 2;
         }
 
-        ProtoStructEntry& operator=(const uint16_t new_val)
+        ProtoStructEntry& operator=(const T& new_val)
         {
-            value_ = new_val;
+            value_ = static_cast<uint16_t>(new_val);
 			return *this;
         }
 
-        operator uint16_t() const { return value_; };
+        operator T() const { return static_cast<T>(value_); };
 };
 
 
-template <>
-class ProtoStructEntry<field_types::required, int16_t>
+template <class T>
+class ProtoStructEntry<field_types::required, T, int16_t>
 {
     protected:
         int16_t value_;
     public:
-        void set(int16_t val) { value_ = val;};
-        const int16_t& get() const {return value_;};
-        int16_t& ref() {return value_;};
+        void set(const T& val) { value_ = static_cast<int16_t>(val);};
+        T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(int16_t);};
 
         void* encode(void* buffer) const
@@ -298,25 +342,24 @@ class ProtoStructEntry<field_types::required, int16_t>
             return buf + 2;
         }
         
-        ProtoStructEntry& operator=(const int16_t new_val)
+        ProtoStructEntry& operator=(const T& new_val)
         {
-            value_ = new_val;
+            value_ = static_cast<int16_t>(new_val);
 			return *this;
         }
 
-        operator int16_t() const { return value_; };
+        operator T() const { return static_cast<T>(value_); };
 };
 
 
-template <>
-class ProtoStructEntry<field_types::required, float>
+template <class T>
+class ProtoStructEntry<field_types::required, T, float>
 {
     protected:
         float value_;
     public:
-        void set(float val) { value_ = val;};
-        const float& get() const {return value_;};
-        float& ref() {return value_;};
+        void set(const T& val) { value_ = static_cast<float>(val);};
+        T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(float);};
 
         void* encode(void* buffer) const
@@ -343,18 +386,18 @@ class ProtoStructEntry<field_types::required, float>
             return buf + 4;
         }
 
-        ProtoStructEntry& operator=(const float new_val)
+        ProtoStructEntry& operator=(const T& new_val)
         {
-            value_ = new_val;
+            value_ = static_cast<float>(new_val);
 			return *this;
         }
 
-        operator float() const { return value_; };
+        operator T() const { return static_cast<T>(value_); };
 };
 
 
-template <class T>
-class ProtoStructEntry<field_types::optional, T> : public  ProtoStructEntry<field_types::required, T>
+template <class T, class X>
+class ProtoStructEntry<field_types::optional, T, X> : public  ProtoStructEntry<field_types::required, T, X>
 {
     private:
         bool is_set_;
@@ -362,8 +405,58 @@ class ProtoStructEntry<field_types::optional, T> : public  ProtoStructEntry<fiel
         ProtoStructEntry()
             :is_set_(false){};
 
-        void set(const T& val) {ProtoStructEntry<field_types::required, T>::set(val); is_set_ = true;};
-        void unset(uint8_t val) {is_set_ = false;};
+        void set(const T& val) {ProtoStructEntry<field_types::required, T, X>::set(val); is_set_ = true;};
+        void unset() {is_set_ = false;};
+        bool isSet() const {return is_set_;};
+
+        size_t encoded_size() const {return 1 + is_set_*ProtoStructEntry<field_types::required, T, X>::encoded_size();};
+
+        void* encode(void* buffer) const
+        {
+            uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
+            buf[0] = is_set_;
+            buf++;
+            if (is_set_)
+            {
+                buf = reinterpret_cast<uint8_t*>(ProtoStructEntry<field_types::required, T, X>::encode(buf));
+            }
+            return buf;
+        }
+        
+        const void* decode(const void* buffer)
+        {
+            const uint8_t* buf = reinterpret_cast<const uint8_t*>(buffer);
+            is_set_ = buf[0];
+            buf++;
+
+            if (is_set_)
+            {
+                buf = reinterpret_cast<const uint8_t*>(ProtoStructEntry<field_types::required, T, X>::decode(buf));
+            }
+            return buf;
+        }
+
+        ProtoStructEntry& operator=(const T& new_val)
+        {
+            this->value_ = static_cast<X>(new_val);
+            is_set_ = true;
+			return *this;
+        }
+};
+
+
+template <class T>
+class ProtoStructEntry<field_types::optional, T, T> : public  ProtoStructEntry<field_types::required, T, T>
+{
+    private:
+        bool is_set_;
+    public:
+        ProtoStructEntry()
+            :is_set_(false){};
+
+        void set(const T& val) {ProtoStructEntry<field_types::required, T, T>::set(val); is_set_ = true;};
+        void unset() {is_set_ = false;};
+        void markSet() {is_set_ = true;};
         bool isSet() const {return is_set_;};
 
         size_t encoded_size() const {return 1 + is_set_*ProtoStructEntry<field_types::required, T>::encoded_size();};
@@ -400,23 +493,21 @@ class ProtoStructEntry<field_types::optional, T> : public  ProtoStructEntry<fiel
 			return *this;
         }
 
+
         ProtoStructEntry& operator=(T&& new_val)
         {
             this->value_ = new_val;
             is_set_ = true;
 			return *this;
         }
-
-
-        operator T() const { return this->value_; };
 };
 
 
-template <class T, size_t N>
-class ProtoStructEntry<field_types::repeated_fixed<N>, T>
+template <class T, class X,  size_t N>
+class ProtoStructEntry<field_types::repeated_fixed<N>, T, X>
 {
     private:
-        ProtoStructEntry<field_types::required, T> data_[N];
+        ProtoStructEntry<field_types::required, T, X> data_[N];
     public:
         ProtoStructEntry(){};
 
@@ -468,7 +559,7 @@ class ProtoStructEntry<field_types::repeated_fixed<N>, T>
 
         ProtoStructEntry& operator=(const ProtoStructEntry& other)
         {
-            if (this == other)
+            if (this == &other)
             {
                 return *this;
             }
@@ -485,7 +576,7 @@ class ProtoStructEntry<field_types::repeated_fixed<N>, T>
 
         ProtoStructEntry& operator=(ProtoStructEntry&& other)
         {
-            if (this == other)
+            if (this == &other)
             {
                 return *this;
             }
@@ -503,20 +594,20 @@ class ProtoStructEntry<field_types::repeated_fixed<N>, T>
 };
 
 
-template <class T>
-class ProtoStructEntry<field_types::repeated, T>
+template <class T, class X>
+class ProtoStructEntry<field_types::repeated, T, X>
 {
     private:
-        ProtoStructEntry<field_types::required, T>* data_;
-        ProtoStructEntry<field_types::required, repeated_size_type> size_;
+        ProtoStructEntry<field_types::required, T, X>* data_;
+        ProtoStructEntry<field_types::required, repeated_size_type, repeated_size_type> size_;
     public:
         ProtoStructEntry()
             :data_(nullptr) {size_ = 0;};
 
         void set_buffer(void* buffer) {data_ = reinterpret_cast<ProtoStructEntry<field_types::required, T>*>(buffer);};
         void set_size(repeated_size_type sz) {size_ = sz;};
-        const ProtoStructEntry<field_types::required, T>* data() const {return data_;};
-        ProtoStructEntry<field_types::required, T>* data() {return data_;};
+        const ProtoStructEntry<field_types::required, T, X>* data() const {return data_;};
+        ProtoStructEntry<field_types::required, T, X>* data() {return data_;};
 
         repeated_size_type size() const {return size_;}
         size_t encoded_size() const 
@@ -568,7 +659,7 @@ class ProtoStructEntry<field_types::repeated, T>
 
         ProtoStructEntry& operator=(const ProtoStructEntry& other)
         {
-            if (this == other)
+            if (this == &other)
             {
                 return *this;
             }
@@ -586,7 +677,7 @@ class ProtoStructEntry<field_types::repeated, T>
 
         ProtoStructEntry& operator=(ProtoStructEntry&& other)
         {
-            if (this == other)
+            if (this == &other)
             {
                 return *this;
             }

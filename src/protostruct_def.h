@@ -27,16 +27,16 @@ private:                                                                        
         }                                                                                                   \
     };                                       
 
-#define __PROTOSTRUCT_ENTRY(FIELD_TYPE, TYPE, FIELD_NAME, ID)                                               \
+#define __PROTOSTRUCT_ENTRY(FIELD_TYPE, TYPE, FIELD_NAME, ID, ...)                                          \
 private:                                                                                                    \
-    protostruct::ProtoStructEntry<protostruct::field_types::FIELD_TYPE, TYPE> FIELD_NAME##_;                \
+    protostruct::ProtoStructEntry<protostruct::field_types::FIELD_TYPE, TYPE , ##__VA_ARGS__ > FIELD_NAME##_;                \
 public:                                                                                                     \
-    protostruct::ProtoStructEntry<protostruct::field_types::FIELD_TYPE, TYPE>& FIELD_NAME()                 \
+    protostruct::ProtoStructEntry<protostruct::field_types::FIELD_TYPE, TYPE , ##__VA_ARGS__ >& FIELD_NAME()                 \
     {                                                                                                       \
         return FIELD_NAME##_;                                                                               \
     };                                                                                                      \
                                                                                                             \
-    const protostruct::ProtoStructEntry<protostruct::field_types::FIELD_TYPE, TYPE>& FIELD_NAME() const     \
+    const protostruct::ProtoStructEntry<protostruct::field_types::FIELD_TYPE, TYPE , ##__VA_ARGS__>& FIELD_NAME() const     \
     {                                                                                                       \
         return FIELD_NAME##_;                                                                               \
     };                                                                                                      \
@@ -45,11 +45,10 @@ public:                                                                         
     struct proto_entry<ID, dummy>                                                                           \
     {                                                                                                       \
         typedef TYPE value_type;                                                                            \
-        typedef protostruct::ProtoStructEntry<protostruct::field_types::FIELD_TYPE, TYPE> proto_type;       \
+        typedef protostruct::ProtoStructEntry<protostruct::field_types::FIELD_TYPE, TYPE, ##__VA_ARGS__> proto_type;       \
         static constexpr bool is_end = false;                                                               \
         static constexpr const char* name = #FIELD_NAME;                                                    \
-        static const protostruct::ProtoStructEntry<protostruct::field_types::FIELD_TYPE, TYPE>&             \
-        get(const class_type* ptr)  {return ptr->FIELD_NAME();};                                            \
+        static const proto_type& get(const class_type* ptr)  {return ptr->FIELD_NAME();};                   \
     };                                                                                                      \
 private:                                                                                                    \
     template<bool dummy>                                                                                    \
