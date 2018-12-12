@@ -15,8 +15,9 @@ typedef uint16_t repeated_size_type;
 namespace field_types
 {
     struct required{};    
-    struct optional{};       
-    struct repeated{};       
+    struct optional{};   
+        
+    template<class S = repeated_size_type>  struct repeated{};       
     template<size_t N> struct repeated_fixed{};   
 }
 
@@ -594,22 +595,22 @@ class ProtoStructEntry<field_types::repeated_fixed<N>, T, X>
 };
 
 
-template <class T, class X>
-class ProtoStructEntry<field_types::repeated, T, X>
+template <class T, class X, class S>
+class ProtoStructEntry<field_types::repeated<S>, T, X>
 {
     private:
         ProtoStructEntry<field_types::required, T, X>* data_;
-        ProtoStructEntry<field_types::required, repeated_size_type, repeated_size_type> size_;
+        ProtoStructEntry<field_types::required, S, S> size_;
     public:
         ProtoStructEntry()
             :data_(nullptr) {size_ = 0;};
 
         void set_buffer(void* buffer) {data_ = reinterpret_cast<ProtoStructEntry<field_types::required, T>*>(buffer);};
-        void set_size(repeated_size_type sz) {size_ = sz;};
+        void set_size(S sz) {size_ = sz;};
         const ProtoStructEntry<field_types::required, T, X>* data() const {return data_;};
         ProtoStructEntry<field_types::required, T, X>* data() {return data_;};
 
-        repeated_size_type size() const {return size_;}
+        size_t size() const {return size_;}
         size_t encoded_size() const 
         {
             size_t sz = size_.encoded_size();
