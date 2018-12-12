@@ -17,8 +17,9 @@ namespace field_types
     struct required{};    
     struct optional{};   
         
-    template<class S = repeated_size_type>  struct repeated{};       
+    template<class S = repeated_size_type>  struct repeated_opt{};       
     template<size_t N> struct repeated_fixed{};   
+    typedef repeated_opt<repeated_size_type> repeated;
 }
 
 
@@ -85,14 +86,14 @@ template <class T, class X>
 class ProtoStructEntry<field_types::required, T, X>: public aux::ProtoStructEntryBase<T,X>
 {
     public:
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
             return this->value_.encode(buffer);
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
-            return this->value_.decode(buffer);
+            return this->value_.decode(buffer, length);
         }
 
         ProtoStructEntry& operator=(const T& new_val)
@@ -111,6 +112,43 @@ class ProtoStructEntry<field_types::required, T, X>: public aux::ProtoStructEntr
 
 
 template <class T>
+class ProtoStructEntry<field_types::required, T, bool>
+{
+    protected:
+        bool value_;
+    public:
+        void set(const T& val) { value_ = static_cast<bool>(val);};
+        const T get() const {return static_cast<T>(value_);};
+        size_t encoded_size() const {return sizeof(uint8_t);};
+
+        size_t encode(void* buffer) const
+        {
+            *reinterpret_cast<bool*>(buffer) = value_;
+            return 1;
+        }
+        
+        size_t decode(const void* buffer, size_t length)
+        {
+            if (length == 0)
+            {
+                return 0;
+            }
+            value_ = *reinterpret_cast<const bool*>(buffer);
+            return 1;
+        }
+
+        ProtoStructEntry& operator=(const T& new_val)
+        {
+            value_ = static_cast<bool>(new_val);
+            return *this;
+        }
+
+        operator T() const { return static_cast<T>(value_); };
+};
+
+
+
+template <class T>
 class ProtoStructEntry<field_types::required, T, uint8_t>
 {
     protected:
@@ -120,16 +158,20 @@ class ProtoStructEntry<field_types::required, T, uint8_t>
         const T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(uint8_t);};
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
             *reinterpret_cast<uint8_t*>(buffer) = value_;
-            return reinterpret_cast<uint8_t*>(buffer) + 1;
+            return 1;
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
+            if (length == 0)
+            {
+                return 0;
+            }
             value_ = *reinterpret_cast<const uint8_t*>(buffer);
-            return reinterpret_cast<const uint8_t*>(buffer) + 1;
+            return 1;
         }
 
         ProtoStructEntry& operator=(const T& new_val)
@@ -152,21 +194,25 @@ class ProtoStructEntry<field_types::required, T, int8_t>
         const T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(int8_t);};
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
             uint8_t enc = value_ > 0 ? 1 : 0;
             uint8_t magn = value_ > 0 ? value_ : -value_;
             enc += (magn << 1u);
             *reinterpret_cast<uint8_t*>(buffer) = enc;
-            return reinterpret_cast<uint8_t*>(buffer) + 1;
+            return 1;
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
+            if (length == 0)
+            {
+                return 0;
+            }
             uint8_t val = *reinterpret_cast<const uint8_t*>(buffer);
             value_ = (val >> 1u);
             value_ = (val & 1u) ? value_ : -value_;
-            return reinterpret_cast<const uint8_t*>(buffer) + 1;
+            return 1;
         }
 
         ProtoStructEntry& operator=(const T& new_val)
@@ -189,7 +235,7 @@ class ProtoStructEntry<field_types::required, T, uint32_t>
         T get() const {return value_;};
         size_t encoded_size() const {return sizeof(uint32_t);};
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
             uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
             buf[0] = value_ & 0b11111111u;
@@ -197,18 +243,22 @@ class ProtoStructEntry<field_types::required, T, uint32_t>
             buf[2] = (value_ >> 16) & 0b11111111u;
             buf[3] = (value_ >> 24) & 0b11111111u;
 
-            return buf + 4;
+            return 4;
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
+            if (length < 4)
+            {
+                return 0;
+            }
             const uint8_t* buf = reinterpret_cast<const uint8_t*>(buffer);
             value_ = 0;
             value_ += static_cast<uint32_t>(buf[0]);
             value_ += static_cast<uint32_t>(buf[1]) << 8;
             value_ += static_cast<uint32_t>(buf[2]) << 16;
             value_ += static_cast<uint32_t>(buf[3]) << 24;
-            return buf + 4;
+            return 4;
         }
 
         ProtoStructEntry& operator=(const T& new_val)
@@ -231,7 +281,7 @@ class ProtoStructEntry<field_types::required, T, int32_t>
         T get() const {return value_;};
         size_t encoded_size() const {return sizeof(int32_t);};
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
             uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
             uint32_t val = value_ >0 ? 1 : 0;
@@ -243,11 +293,15 @@ class ProtoStructEntry<field_types::required, T, int32_t>
             buf[2] = (val >> 16) & 0b11111111u;
             buf[3] = (val >> 24) & 0b11111111u;
 
-            return buf + 4;
+            return 4;
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
+            if (length < 4)
+            {
+                return 0;
+            }
             const uint8_t* buf = reinterpret_cast<const uint8_t*>(buffer);
             uint32_t val;
             val = 0;
@@ -257,7 +311,7 @@ class ProtoStructEntry<field_types::required, T, int32_t>
             val += static_cast<uint32_t>(buf[3]) << 24;
             value_ = (val >> 1u);
             value_ = (val & 1u) ? value_ : -value_;
-            return buf + 4;
+            return 4;
         }
         
         ProtoStructEntry& operator=(const T& new_val)
@@ -280,22 +334,27 @@ class ProtoStructEntry<field_types::required, T, uint16_t>
         T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(uint16_t);};
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
             uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
             buf[0] = value_ & 0b11111111u;
             buf[1] = (value_ >> 8) & 0b11111111u;
 
-            return buf + 2;
+            return 2;
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
+            if (length < 2)
+            {
+                return 0;
+            }
+
             const uint8_t* buf = reinterpret_cast<const uint8_t*>(buffer);
             value_ = 0;
             value_ += static_cast<uint32_t>(buf[0]);
             value_ += static_cast<uint32_t>(buf[1]) << 8;
-            return buf + 2;
+            return 2;
         }
 
         ProtoStructEntry& operator=(const T& new_val)
@@ -318,7 +377,7 @@ class ProtoStructEntry<field_types::required, T, int16_t>
         T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(int16_t);};
 
-        void* encode(void* buffer) const
+       size_t encode(void* buffer) const
         {
             uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
             uint16_t val = value_ >0 ? 1 : 0;
@@ -328,11 +387,15 @@ class ProtoStructEntry<field_types::required, T, int16_t>
             buf[0] = val & 0b11111111u;
             buf[1] = (val >> 8) & 0b11111111u;
 
-            return buf + 2;
+            return 2;
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
+            if (length < 2)
+            {
+                return 0;
+            }
             const uint8_t* buf = reinterpret_cast<const uint8_t*>(buffer);
             uint16_t val;
             val = 0;
@@ -340,7 +403,7 @@ class ProtoStructEntry<field_types::required, T, int16_t>
             val += static_cast<uint16_t>(buf[1]) << 8;
             value_ = (val >> 1u);
             value_ = (val & 1u) ? value_ : -value_;
-            return buf + 2;
+            return 2;
         }
         
         ProtoStructEntry& operator=(const T& new_val)
@@ -363,7 +426,7 @@ class ProtoStructEntry<field_types::required, T, float>
         T get() const {return static_cast<T>(value_);};
         size_t encoded_size() const {return sizeof(float);};
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
             uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
             const uint32_t value = reinterpret_cast<const uint32_t&>(value_);
@@ -372,11 +435,15 @@ class ProtoStructEntry<field_types::required, T, float>
             buf[2] = (value >> 16) & 0b11111111u;
             buf[3] = (value >> 24) & 0b11111111u;
 
-            return buf + 4;
+            return 4;
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
+            if (length < 4)
+            {
+                return 0;
+            }
             const uint8_t* buf = reinterpret_cast<const uint8_t*>(buffer);
             uint32_t value = 0;
             value += static_cast<uint32_t>(buf[0]);
@@ -384,7 +451,7 @@ class ProtoStructEntry<field_types::required, T, float>
             value += static_cast<uint32_t>(buf[2]) << 16;
             value += static_cast<uint32_t>(buf[3]) << 24;
             value_ = reinterpret_cast<float&>(value);
-            return buf + 4;
+            return 4;
         }
 
         ProtoStructEntry& operator=(const T& new_val)
@@ -410,31 +477,42 @@ class ProtoStructEntry<field_types::optional, T, X> : public  ProtoStructEntry<f
         void unset() {is_set_ = false;};
         bool isSet() const {return is_set_;};
 
-        size_t encoded_size() const {return 1 + is_set_*ProtoStructEntry<field_types::required, T, X>::encoded_size();};
+        size_t encoded_size() const {return 1 + is_set_ ? ProtoStructEntry<field_types::required, T, X>::encoded_size() : 0;};
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
+            size_t bytes_written = 1;
             uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
             buf[0] = is_set_;
             buf++;
             if (is_set_)
             {
-                buf = reinterpret_cast<uint8_t*>(ProtoStructEntry<field_types::required, T, X>::encode(buf));
+                bytes_written += ProtoStructEntry<field_types::required, T, X>::encode(buf);
             }
-            return buf;
+            return bytes_written;
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
+            if (length < 1)
+            {
+                return 0;
+            }
+            size_t bytes_read = 1;
             const uint8_t* buf = reinterpret_cast<const uint8_t*>(buffer);
             is_set_ = buf[0];
             buf++;
+            length--;
 
             if (is_set_)
             {
-                buf = reinterpret_cast<const uint8_t*>(ProtoStructEntry<field_types::required, T, X>::decode(buf));
+                bytes_read += ProtoStructEntry<field_types::required, T, X>::decode(buf, length);
+                if (bytes_read == 1)
+                {
+                    return 0;
+                }
             }
-            return buf;
+            return bytes_read;
         }
 
         ProtoStructEntry& operator=(const T& new_val)
@@ -462,29 +540,40 @@ class ProtoStructEntry<field_types::optional, T, T> : public  ProtoStructEntry<f
 
         size_t encoded_size() const {return 1 + is_set_*ProtoStructEntry<field_types::required, T>::encoded_size();};
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
+            size_t bytes_written = 1;
             uint8_t* buf = reinterpret_cast<uint8_t*>(buffer);
             buf[0] = is_set_;
             buf++;
             if (is_set_)
             {
-                buf = reinterpret_cast<uint8_t*>(ProtoStructEntry<field_types::required, T>::encode(buf));
+                bytes_written += ProtoStructEntry<field_types::required, T>::encode(buf);
             }
-            return buf;
+            return bytes_written;
         }
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
+            if (length < 1)
+            {
+                return 0;
+            }
+            size_t bytes_read = 1;
+
             const uint8_t* buf = reinterpret_cast<const uint8_t*>(buffer);
             is_set_ = buf[0];
             buf++;
-
+            length--;
             if (is_set_)
             {
-                buf = reinterpret_cast<const uint8_t*>(ProtoStructEntry<field_types::required, T>::decode(buf));
+                bytes_read += ProtoStructEntry<field_types::required, T>::decode(buf, length);
+                if (bytes_read == 1)
+                {
+                    return 0;
+                }
             }
-            return buf;
+            return bytes_read;
         }
 
         ProtoStructEntry& operator=(const T& new_val)
@@ -527,27 +616,38 @@ class ProtoStructEntry<field_types::repeated_fixed<N>, T, X>
         }
 
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
-            void* buf = buffer;
+            size_t bytes_written = 0;
+            uint8_t* buf = static_cast<uint8_t*>(buffer);
             
             for (size_t i = 0; i< N; i++)
             {
-                buf = data_[i].encode(buf);
+                size_t bytes_written_i = data_[i].encode(buf);
+                buf += bytes_written_i;
+                bytes_written += bytes_written_i;
             }
-            return buf;
+            return bytes_written;
         }
 
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
-            const void* buf = buffer;
+            const uint8_t* buf = static_cast<const uint8_t*>(buffer);
+            size_t bytes_read = 0;
 
             for (size_t i = 0; i< N; i++)
             {
-                buf = data_[i].decode(buf);
+                size_t bytes_read_i = data_[i].decode(buf, length);
+                if (bytes_read_i == 0)
+                {
+                    return 0;
+                }
+                length -= bytes_read_i;
+                buf += bytes_read_i;
+                bytes_read += bytes_read_i;
             }
-            return buf;            
+            return bytes_read;            
         }
 
         ProtoStructEntry(ProtoStructEntry&& other)
@@ -596,7 +696,7 @@ class ProtoStructEntry<field_types::repeated_fixed<N>, T, X>
 
 
 template <class T, class X, class S>
-class ProtoStructEntry<field_types::repeated<S>, T, X>
+class ProtoStructEntry<field_types::repeated_opt<S>, T, X>
 {
     private:
         ProtoStructEntry<field_types::required, T, X>* data_;
@@ -622,30 +722,46 @@ class ProtoStructEntry<field_types::repeated<S>, T, X>
         }
 
 
-        void* encode(void* buffer) const
+        size_t encode(void* buffer) const
         {
-            void* buf = buffer;
-
-            buf = size_.encode(buf);
+            uint8_t* buf = static_cast<uint8_t*>(buffer);
+            size_t bytes_written =  size_.encode(buf);
+            buf += bytes_written;
 
             for (size_t i = 0; i< size_.get(); i++)
             {
-                buf = (data_[i].encode(buf));
+                size_t bytes_written_i = data_[i].encode(buf);
+                buf += bytes_written_i;
+                bytes_written += bytes_written_i;
             }
-            return buf;
+            return bytes_written;
         }
 
         
-        const void* decode(const void* buffer)
+        size_t decode(const void* buffer, size_t length)
         {
-            const void* buf = buffer;
-            buf = size_.decode(buf);
+            const uint8_t* buf = static_cast<const uint8_t*>(buffer);
+            size_t bytes_read = size_.decode(buf, length);
+
+            if (bytes_read == 0)
+            {
+                return 0;
+            }
+            length -= bytes_read;
+            buf += bytes_read;
 
             for (size_t i = 0; i< size_; i++)
             {
-                buf = data_[i].decode(buf);
+                size_t bytes_read_i = data_[i].decode(buf, length);
+                if (bytes_read_i == 0)
+                {
+                    return 0;
+                }
+                bytes_read += bytes_read_i;
+                buf += bytes_read_i;
+                length -= bytes_read_i;
             }
-            return buf;            
+            return bytes_read;            
         }
 
 
