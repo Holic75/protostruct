@@ -1,24 +1,25 @@
 #ifndef PROTOUNION_DEF_H
 #define PROTOUNION_DEF_H
 
-#define __PROTOUNION_BEGIN(name)                                                                                          \
-class name                                                                                                                \
+#define __PROTOUNION_BEGIN(NAME)                                                                                          \
+class NAME                                                                                                                \
 {                                                                                                                         \
 public:                                                                                                                   \
-    name()                                                                                                                \
+    NAME()                                                                                                                \
         :data_(nullptr){ current_field_id_ = 0;};                                                                         \
-    ~name() {clear();};                                                                                                   \
+    ~NAME() {clear();};                                                                                                   \
+    static constexpr const char* name = #NAME;                                                                            \
 private:                                                                                                                  \
     protostruct::ProtoStructEntry<protostruct::field_types::required, uint8_t> current_field_id_;                         \
     void* data_;                                                                                                          \
 public:                                                                                                                   \
-    typedef name class_type;                                                                                              \
+    typedef NAME class_type;                                                                                              \
     template<size_t id, bool dummy = true>                                                                                \
     struct proto_entry                                                                                                    \
     {                                                                                                                     \
         typedef void value_type;                                                                                          \
         typedef void proto_type;                                                                                          \
-        static constexpr const char* name = "";                                                                           \
+        static constexpr const char*  name = "";                                                                          \
         static size_t get(const class_type* ptr) {return 0;};                                                             \
         static constexpr bool is_end = true;                                                                              \
         static bool hasField(const class_type* ptr)  {return false;};                                                     \
@@ -96,7 +97,7 @@ private:                                                                        
             {                                                                                                             \
                 return  __proto_helper<ID+1>::encoded_size(ptr);                                                          \
             }                                                                                                             \
-            return ptr->FIELD_NAME().encoded_size();                                                                      \
+            return ptr->FIELD_NAME().encodedSize();                                                                      \
         };                                                                                                                \
                                                                                                                           \
         static constexpr size_t count()                                                                                   \
@@ -154,7 +155,7 @@ public:                                                                         
         }                                                                                                                 \
         return bytes_read + opt_bytes_read;                                                                               \
     };                                                                                                                    \
-    size_t encoded_size() const {return current_field_id_.encoded_size() +__proto_helper<1>::encoded_size(this);};       \
+    size_t encodedSize() const {return current_field_id_.encodedSize() +__proto_helper<1>::encoded_size(this);};       \
     static constexpr  size_t fieldCount(){ return __proto_helper<1>::count();};                                           \
     void clear() {__proto_helper<1>::destroy(this);};                                                                     \
 };

@@ -35,7 +35,7 @@ class ProtoStructEntryBase
     public:
         void set(const T& val) { value_ = static_cast<X>(val);};
         T get() const {return static_cast<T>(value_);};
-        size_t encoded_size() const {return value_.encoded_size();};
+        size_t encodedSize() const {return value_.encodedSize();};
 
         ProtoStructEntryBase& operator=(const T& new_val)
         {
@@ -63,7 +63,7 @@ class ProtoStructEntryBase<T, T>
         const T& get() const {return value_;};
         T& ref() {return value_;};
 
-        size_t encoded_size() const {return value_.encoded_size();};
+        size_t encodedSize() const {return value_.encodedSize();};
 
         ProtoStructEntryBase& operator=(const T& new_val)
         {
@@ -119,7 +119,7 @@ class ProtoStructEntry<field_types::required, T, bool>
     public:
         void set(const T& val) { value_ = static_cast<bool>(val);};
         const T get() const {return static_cast<T>(value_);};
-        size_t encoded_size() const {return sizeof(uint8_t);};
+        size_t encodedSize() const {return sizeof(uint8_t);};
 
         size_t encode(void* buffer) const
         {
@@ -156,7 +156,7 @@ class ProtoStructEntry<field_types::required, T, uint8_t>
     public:
         void set(const T& val) { value_ = static_cast<uint8_t>(val);};
         const T get() const {return static_cast<T>(value_);};
-        size_t encoded_size() const {return sizeof(uint8_t);};
+        size_t encodedSize() const {return sizeof(uint8_t);};
 
         size_t encode(void* buffer) const
         {
@@ -192,7 +192,7 @@ class ProtoStructEntry<field_types::required, T, int8_t>
     public:
         void set(const T& val) { value_ = static_cast<int8_t>(val);};
         const T get() const {return static_cast<T>(value_);};
-        size_t encoded_size() const {return sizeof(int8_t);};
+        size_t encodedSize() const {return sizeof(int8_t);};
 
         size_t encode(void* buffer) const
         {
@@ -233,7 +233,7 @@ class ProtoStructEntry<field_types::required, T, uint32_t>
     public:
         void set(const T& val) { value_ = static_cast<uint32_t>(val);};
         T get() const {return value_;};
-        size_t encoded_size() const {return sizeof(uint32_t);};
+        size_t encodedSize() const {return sizeof(uint32_t);};
 
         size_t encode(void* buffer) const
         {
@@ -279,7 +279,7 @@ class ProtoStructEntry<field_types::required, T, int32_t>
     public:
         void set(const T& val) { value_ = static_cast<T>(val);};
         T get() const {return value_;};
-        size_t encoded_size() const {return sizeof(int32_t);};
+        size_t encodedSize() const {return sizeof(int32_t);};
 
         size_t encode(void* buffer) const
         {
@@ -332,7 +332,7 @@ class ProtoStructEntry<field_types::required, T, uint16_t>
     public:
         void set(const T& val) { value_ = static_cast<uint16_t>(val);};
         T get() const {return static_cast<T>(value_);};
-        size_t encoded_size() const {return sizeof(uint16_t);};
+        size_t encodedSize() const {return sizeof(uint16_t);};
 
         size_t encode(void* buffer) const
         {
@@ -375,7 +375,7 @@ class ProtoStructEntry<field_types::required, T, int16_t>
     public:
         void set(const T& val) { value_ = static_cast<int16_t>(val);};
         T get() const {return static_cast<T>(value_);};
-        size_t encoded_size() const {return sizeof(int16_t);};
+        size_t encodedSize() const {return sizeof(int16_t);};
 
        size_t encode(void* buffer) const
         {
@@ -424,7 +424,7 @@ class ProtoStructEntry<field_types::required, T, float>
     public:
         void set(const T& val) { value_ = static_cast<float>(val);};
         T get() const {return static_cast<T>(value_);};
-        size_t encoded_size() const {return sizeof(float);};
+        size_t encodedSize() const {return sizeof(float);};
 
         size_t encode(void* buffer) const
         {
@@ -477,7 +477,7 @@ class ProtoStructEntry<field_types::optional, T, X> : public  ProtoStructEntry<f
         void unset() {is_set_ = false;};
         bool isSet() const {return is_set_;};
 
-        size_t encoded_size() const {return 1 + is_set_ ? ProtoStructEntry<field_types::required, T, X>::encoded_size() : 0;};
+        size_t encodedSize() const {return 1 + is_set_ ? ProtoStructEntry<field_types::required, T, X>::encodedSize() : 0;};
 
         size_t encode(void* buffer) const
         {
@@ -538,7 +538,7 @@ class ProtoStructEntry<field_types::optional, T, T> : public  ProtoStructEntry<f
         void markSet() {is_set_ = true;};
         bool isSet() const {return is_set_;};
 
-        size_t encoded_size() const {return 1 + is_set_*ProtoStructEntry<field_types::required, T>::encoded_size();};
+        size_t encodedSize() const {return 1 + is_set_*ProtoStructEntry<field_types::required, T>::encodedSize();};
 
         size_t encode(void* buffer) const
         {
@@ -605,12 +605,12 @@ class ProtoStructEntry<field_types::repeated_fixed<N>, T, X>
         ProtoStructEntry<field_types::required, T>* data() {return data_;};
 
         constexpr size_t size() const {return N;}
-        size_t encoded_size() const 
+        size_t encodedSize() const 
         {
             size_t sz = sizeof(repeated_size_type);
             for (size_t i = 0; i < N; i++)
             {
-                sz += data_[i].encoded_size();
+                sz += data_[i].encodedSize();
             }
             return sz;
         }
@@ -711,12 +711,12 @@ class ProtoStructEntry<field_types::repeated_opt<S>, T, X>
         ProtoStructEntry<field_types::required, T, X>* data() {return data_;};
 
         size_t size() const {return size_;}
-        size_t encoded_size() const 
+        size_t encodedSize() const 
         {
-            size_t sz = size_.encoded_size();
+            size_t sz = size_.encodedSize();
             for (size_t i = 0; i < size_; i++)
             {
-                sz += data_[i].encoded_size();
+                sz += data_[i].encodedSize();
             }
             return sz;
         }

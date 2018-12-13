@@ -1,11 +1,12 @@
 #ifndef PROTOSTRUCT_DEF_H
 #define PROTOSTRUCT_DEF_H
 
-#define __PROTOSTRUCT_BEGIN(name)                                                                                         \
-class name                                                                                                                \
+#define __PROTOSTRUCT_BEGIN(NAME)                                                                                         \
+class NAME                                                                                                                \
 {                                                                                                                         \
 public:                                                                                                                   \
-    typedef name class_type;                                                                                              \
+    typedef NAME class_type;                                                                                              \
+    static constexpr const char* name = #NAME;                                                                            \
     template<size_t id, bool dummy = true>                                                                                \
     struct proto_entry                                                                                                    \
     {                                                                                                                     \
@@ -77,7 +78,7 @@ private:                                                                        
                                                                                                                           \
         static size_t encoded_size(const class_type* ptr)                                                                 \
         {                                                                                                                 \
-            return ptr->FIELD_NAME().encoded_size() + __proto_helper<ID+1>::encoded_size(ptr);                            \
+            return ptr->FIELD_NAME().encodedSize() + __proto_helper<ID+1>::encoded_size(ptr);                            \
         };                                                                                                                \
                                                                                                                           \
         static constexpr size_t count()                                                                                   \
@@ -91,7 +92,7 @@ private:                                                                        
 public:                                                                                                                   \
     size_t encode(void* buffer) const {return __proto_helper<1>::encode(this, buffer);};                                  \
     size_t decode(const void* buffer, size_t length) {return __proto_helper<1>::decode(this, buffer, length);};           \
-    size_t encoded_size() const {return __proto_helper<1>::encoded_size(this);};                                          \
+    size_t encodedSize() const {return __proto_helper<1>::encoded_size(this);};                                          \
     static constexpr  size_t fieldCount(){ return __proto_helper<1>::count();};                                           \
 };
 
