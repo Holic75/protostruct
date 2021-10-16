@@ -34,7 +34,8 @@ class ProtoStructEntryBase
         X value_;
     public:
         void set(const T& val) { value_ = static_cast<X>(val);};
-        T get() const {return static_cast<T>(value_);};
+        const T& get() const {return static_cast<T>(value_);};
+		X& ref() { return value_; };
         size_t encodedSize() const {return value_.encodedSize();};
 
         ProtoStructEntryBase& operator=(const T& new_val)
@@ -521,6 +522,12 @@ class ProtoStructEntry<field_types::optional, T, X> : public  ProtoStructEntry<f
             is_set_ = true;
 			return *this;
         }
+
+		X& ref() 
+		{ 
+			is_set_ = true;
+			return value_; 
+		};
 };
 
 
@@ -590,6 +597,12 @@ class ProtoStructEntry<field_types::optional, T, T> : public  ProtoStructEntry<f
             is_set_ = true;
 			return *this;
         }
+
+		T& ref()
+		{
+			is_set_ = true;
+			return value_;
+		};
 };
 
 

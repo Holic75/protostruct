@@ -1,8 +1,16 @@
 #ifndef PROTOSTRUCT_DEF_H
 #define PROTOSTRUCT_DEF_H
 
+namespace protostruct
+{
+	class ProtostructBase
+	{
+
+	};
+}
+
 #define __PROTOSTRUCT_BEGIN(NAME)                                                                                         \
-class NAME                                                                                                                \
+class NAME: protostruct::ProtostructBase                                                                                  \
 {                                                                                                                         \
 public:                                                                                                                   \
     typedef NAME class_type;                                                                                              \

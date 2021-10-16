@@ -1,8 +1,17 @@
 #ifndef PROTOUNION_DEF_H
 #define PROTOUNION_DEF_H
 
+
+namespace protostruct
+{
+	class ProtounionBase
+	{
+
+	};
+}
+
 #define __PROTOUNION_BEGIN(NAME)                                                                                          \
-class NAME                                                                                                                \
+class NAME: protostruct::ProtounionBase                                                                                   \
 {                                                                                                                         \
 public:                                                                                                                   \
     NAME()                                                                                                                \
@@ -88,6 +97,7 @@ private:                                                                        
             {                                                                                                             \
                 return __proto_helper<ID+1>::decode(ptr, buffer, length);                                                 \
             }                                                                                                             \
+            create(ptr);                                                                                                  \
             return ptr->FIELD_NAME().decode(buffer, length);                                                              \
         };                                                                                                                \
                                                                                                                           \
@@ -109,7 +119,7 @@ private:                                                                        
 public:                                                                                                                   \
     proto_entry<ID>::proto_type& FIELD_NAME()                                                                             \
     {                                                                                                                     \
-        if (current_field_id_ != ID)                                                                                \
+        if (current_field_id_ != ID)                                                                                      \
         {                                                                                                                 \
             clear();                                                                                                      \
             __proto_helper<ID>::create(this);                                                                             \
@@ -126,7 +136,7 @@ public:                                                                         
 
 
 #define __PROTOUNION_END                                                                                                  \
-    template<size_t ID, bool dummy> friend struct class_type::__proto_helper;                                                  \
+    template<size_t ID, bool dummy> friend struct __proto_helper;                                                         \
 public:                                                                                                                   \
     size_t encode(void* buffer) const                                                                                     \
     {                                                                                                                     \
@@ -138,7 +148,7 @@ public:                                                                         
     size_t decode(const void* buffer, size_t length)                                                                      \
     {                                                                                                                     \
         const uint8_t* buf = static_cast<const uint8_t*>(buffer);                                                         \
-        size_t bytes_read = current_field_id_.decode(buffer, length);                                                             \
+        size_t bytes_read = current_field_id_.decode(buffer, length);                                                     \
         if (bytes_read == 0)                                                                                              \
         {                                                                                                                 \
             return 0;                                                                                                     \

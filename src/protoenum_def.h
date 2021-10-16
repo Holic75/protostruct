@@ -1,14 +1,22 @@
 #ifndef PROTOENUM_DEF_H
 #define PROTOENUM_DEF_H
 
+namespace protostruct
+{
+	class ProtoenumBase
+	{
+
+	};
+}
+
 #define __PROTOENUM_BEGIN(NAME, TYPE)                                                                                     \
-class NAME                                                                                                                \
+class NAME: protostruct::ProtoenumBase                                                                                    \
 {                                                                                                                         \
 public:                                                                                                                   \
     typedef TYPE enum_type;                                                                                               \
     static constexpr const char* name = #NAME;                                                                            \
-    NAME(){enum_value_ = proto_entry<1>::val;};                                                                            \
-    NAME(const enum_type& val) {enum_value_ = val;};                                                      \
+    NAME(){enum_value_ = proto_entry<1>::val;};                                                                           \
+    NAME(const enum_type& val) {enum_value_ = val;};                                                                      \
 private:                                                                                                                  \
     protostruct::ProtoStructEntry<protostruct::field_types::required, enum_type> enum_value_;                             \
 public:                                                                                                                   \
@@ -42,7 +50,7 @@ public:                                                                         
     {                                                                                                                     \
         static constexpr bool is_end = false;                                                                             \
         static constexpr const char* name = #NAME;                                                                        \
-        static constexpr const enum_type val = VALUE;                                                              \
+        static constexpr const enum_type val = VALUE;                                                                     \
     };                                                                                                                    \
 private:                                                                                                                  \
     template<bool dummy>                                                                                                  \
@@ -101,9 +109,10 @@ public:                                                                         
     class_type& operator=(const enum_type& val)                                                                           \
     {                                                                                                                     \
         enum_value_ = val;                                                                                                \
-        return *this;                                                                                                      \
+        return *this;                                                                                                     \
     }                                                                                                                     \
     operator enum_type() {return enum_value_.get();};                                                                     \
+    enum_type get() const {return enum_value_.get();};                                                                    \
 };
 
 #endif
