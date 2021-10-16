@@ -33,12 +33,55 @@ public:                                                                         
         static constexpr bool is_end = true;                                                                              \
         static bool hasField(const class_type* ptr)  {return false;};                                                     \
     };                                                                                                                    \
+	NAME(const NAME& other)                                                                                               \
+		:NAME()                                                                                                           \
+	{                                                                                                                     \
+		this->copy(&other);                                                                                               \
+	}                                                                                                                     \
+                                                                                                                          \
+	NAME(NAME&& other)                                                                                                    \
+		:current_field_id_(other.current_field_id_), data_(other.data_)                                                   \
+	{                                                                                                                     \
+		other.current_field_id_ = 0;                                                                                      \
+		other.data_ = nullptr;                                                                                            \
+	}                                                                                                                     \
+                                                                                                                          \
+	NAME& operator=(const NAME& other)                                                                                    \
+	{                                                                                                                     \
+		if (this == &other)                                                                                               \
+		{                                                                                                                 \
+			return *this;                                                                                                 \
+		}                                                                                                                 \
+		else                                                                                                              \
+		{                                                                                                                 \
+            this->copy(&other);                                                                                           \
+		}                                                                                                                 \
+		return *this;                                                                                                     \
+	}                                                                                                                     \
+                                                                                                                          \
+	NAME& operator=(NAME&& other)                                                                                         \
+	{                                                                                                                     \
+		if (this == &other)                                                                                               \
+		{                                                                                                                 \
+			return *this;                                                                                                 \
+		}                                                                                                                 \
+		else                                                                                                              \
+		{                                                                                                                 \
+            clear();                                                                                                      \
+			current_field_id_ = other.current_field_id_;                                                                  \
+			data_ = other.data_;                                                                                          \
+			other.current_field_id_ = 0;                                                                                  \
+			other.data_ = nullptr;                                                                                        \
+        }                                                                                                                 \
+		return *this;                                                                                                     \
+	}                                                                                                                     \
 private:                                                                                                                  \
     template<size_t id, bool dummy = true>                                                                                \
     struct __proto_helper                                                                                                 \
     {                                                                                                                     \
         static size_t encode(const class_type* ptr, void* buffer)  {return 0;};                                           \
         static size_t decode(class_type* ptr, const void* buffer, size_t length) {return 0;};                             \
+		static void copy(class_type* ptr, const class_type* other_ptr) {return;};                                         \
         static size_t encoded_size(const class_type* ptr) {return 0;};                                                    \
         static void create(class_type* ptr) {return;};                                                                    \
         static void destroy(class_type* ptr) {return;};                                                                   \
@@ -50,7 +93,7 @@ private:                                                                        
 
 #define __PROTOUNION_ENTRY(FIELD_TYPE, TYPE, FIELD_NAME, ID, ...)                                                         \
 public:                                                                                                                   \
-    bool has_##FIELD_NAME() const { return ID == current_field_id_;};                                                      \
+    bool has_##FIELD_NAME() const { return ID == current_field_id_;};                                                     \
                                                                                                                           \
     template<bool dummy>                                                                                                  \
     struct proto_entry<ID, dummy>                                                                                         \
@@ -68,7 +111,7 @@ private:                                                                        
     {                                                                                                                     \
         static void create(class_type* ptr)                                                                               \
         {                                                                                                                 \
-            ptr->data_ = new proto_entry<ID>::proto_type();                                                                    \
+            ptr->data_ = new proto_entry<ID>::proto_type();                                                               \
             ptr->current_field_id_ = ID;                                                                                  \
         };                                                                                                                \
                                                                                                                           \
@@ -81,6 +124,16 @@ private:                                                                        
             delete static_cast<proto_entry<ID>*>(ptr->data_);                                                             \
             ptr->current_field_id_ = 0;                                                                                   \
         };                                                                                                                \
+                                                                                                                          \
+        static void copy(class_type* ptr, const class_type* other_ptr)                                                    \
+        {                                                                                                                 \
+			if (other_ptr->current_field_id_ != ID)                                                                       \
+			{                                                                                                             \
+			      return __proto_helper<ID + 1>::copy(ptr, other_ptr);                                                    \
+			}                                                                                                             \
+			create(ptr);                                                                                                  \
+            ptr->FIELD_NAME() = other_ptr->FIELD_NAME();                                                                  \
+        }                                                                                                                 \
                                                                                                                           \
         static size_t encode(const class_type* ptr, void* buffer)                                                         \
         {                                                                                                                 \
@@ -97,6 +150,7 @@ private:                                                                        
             {                                                                                                             \
                 return __proto_helper<ID+1>::decode(ptr, buffer, length);                                                 \
             }                                                                                                             \
+			ptr->clear();                                                                                                 \
             create(ptr);                                                                                                  \
             return ptr->FIELD_NAME().decode(buffer, length);                                                              \
         };                                                                                                                \
@@ -165,9 +219,19 @@ public:                                                                         
         }                                                                                                                 \
         return bytes_read + opt_bytes_read;                                                                               \
     };                                                                                                                    \
-    size_t encodedSize() const {return current_field_id_.encodedSize() +__proto_helper<1>::encoded_size(this);};       \
+    size_t encodedSize() const {return current_field_id_.encodedSize() +__proto_helper<1>::encoded_size(this);};          \
     static constexpr  size_t fieldCount(){ return __proto_helper<1>::count();};                                           \
     void clear() {__proto_helper<1>::destroy(this);};                                                                     \
+    void copy(const class_type* other)                                                                                    \
+    {                                                                                                                     \
+		if (this == other)                                                                                                \
+		{                                                                                                                 \
+			return;                                                                                                       \
+		}                                                                                                                 \
+		clear();                                                                                                          \
+		__proto_helper<1>::copy(this, other);                                                                             \
+	}                                                                                                                     \
+                                                                                                                          \
 };
 
 #endif

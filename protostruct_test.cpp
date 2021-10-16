@@ -130,7 +130,8 @@ protostructEntryToString(const T& p)
 
 __PROTOUNION_BEGIN(MyUnion)
 __PROTOUNION_ENTRY(optional, float, union_float, 1)
-__PROTOUNION_ENTRY(optional, uint8_t, union_uint, 2)
+__PROTOUNION_ENTRY(optional, uint16_t, union_uint, 2)
+__PROTOUNION_ENTRY(repeated_fixed<5>, int8_t, union_int_array, 3)
 __PROTOUNION_END
 
 
@@ -186,7 +187,11 @@ int main()
 	array_a.my_msg_array().data()[1] = a2;
 	array_a.my_msg_array().data()[2] = a1;
 	array_a.my_msg_array().data()[2].ref().my_int1() = 100;
-	array_a.my_msg_array().data()[2].ref().my_union().unset();
+	auto& my_union = array_a.my_msg_array().data()[2].ref().my_union().ref();
+	for (int i = 0; i < my_union.union_int_array().size(); i++)
+	{
+		my_union.union_int_array().data()[i] = i - 2;
+	}
 
 	
 	MyMessage3 b;
