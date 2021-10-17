@@ -128,10 +128,16 @@ protostructEntryToString(const T& p)
 	return std::string(p.name) + detail::protostructEntryToStringConverter<false>::convert(p, identation);
 }
 
+__PROTOSTRUCT_BEGIN(MyMessage0)
+__PROTOSTRUCT_ENTRY(required, int16_t, my_int0, 1)
+__PROTOSTRUCT_ENTRY(required, float, my_float0, 2)
+__PROTOSTRUCT_END
+
 __PROTOUNION_BEGIN(MyUnion)
 __PROTOUNION_ENTRY(optional, float, union_float, 1)
 __PROTOUNION_ENTRY(optional, uint16_t, union_uint, 2)
 __PROTOUNION_ENTRY(repeated_fixed<5>, int8_t, union_int_array, 3)
+__PROTOUNION_ENTRY(repeated_fixed<2>, MyMessage0, union_message_array, 4)
 __PROTOUNION_END
 
 
@@ -178,20 +184,33 @@ int main()
 	a2.my_enum1() = MyEnum::MyEnumValue1;
 	a2.my_union().ref().union_uint() = 10;
 
-	MyMessage1* my_msg_buffer = new MyMessage1[3];
+	MyMessage1* my_msg_buffer = new MyMessage1[4];
 	MyMessage2 array_a;
 
 	array_a.my_msg_array().set_buffer(my_msg_buffer);
-	array_a.my_msg_array().set_size(3);
+	array_a.my_msg_array().set_size(4);
 	array_a.my_msg_array().data()[0] = a1;
 	array_a.my_msg_array().data()[1] = a2;
 	array_a.my_msg_array().data()[2] = a1;
 	array_a.my_msg_array().data()[2].ref().my_int1() = 100;
+	array_a.my_msg_array().data()[3] = a2;
 	auto& my_union = array_a.my_msg_array().data()[2].ref().my_union().ref();
 	for (int i = 0; i < my_union.union_int_array().size(); i++)
 	{
 		my_union.union_int_array().data()[i] = i - 2;
 	}
+
+	auto& my_union2 = array_a.my_msg_array().data()[3].ref().my_union().ref();
+	MyMessage0 msg00, msg01;
+	msg00.my_float0() = -0.5f;
+	msg00.my_int0() = 23;
+
+	msg01.my_float0() = 2.5f;
+	msg01.my_int0() = -33;
+
+	my_union2.union_message_array().data()[0] = msg00;
+	my_union2.union_message_array().data()[1] = msg01;
+
 
 	
 	MyMessage3 b;
@@ -206,6 +225,7 @@ int main()
 
 	void* buf = new uint8_t[100];
 
+	std::cout << "MyUnion entry size: " << MyUnion::MAX_DATA_SIZE << std::endl;
 	std::cout << protostructEntryToString(array_a) << std::endl;
 
 	b.encode(buf);

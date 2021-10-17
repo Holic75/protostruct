@@ -4,23 +4,26 @@
 
 namespace protostruct
 {
-	class ProtounionBase
+class ProtounionBase
+{
+public:
+	template<class T>
+	static void destroyAt(T* val)
 	{
-
-	};
+		val->~T();
+	}
+};
 }
 
 #define __PROTOUNION_BEGIN(NAME)                                                                                          \
 class NAME: protostruct::ProtounionBase                                                                                   \
 {                                                                                                                         \
 public:                                                                                                                   \
-    NAME()                                                                                                                \
-        :data_(nullptr){ current_field_id_ = 0;};                                                                         \
+    NAME() { current_field_id_ = 0;};                                                                                     \
     ~NAME() {clear();};                                                                                                   \
     static constexpr const char* name = #NAME;                                                                            \
 private:                                                                                                                  \
     protostruct::ProtoStructEntry<protostruct::field_types::required, uint8_t> current_field_id_;                         \
-    void* data_;                                                                                                          \
 public:                                                                                                                   \
     typedef NAME class_type;                                                                                              \
     template<size_t id, bool dummy = true>                                                                                \
@@ -39,13 +42,6 @@ public:                                                                         
 		this->copy(&other);                                                                                               \
 	}                                                                                                                     \
                                                                                                                           \
-	NAME(NAME&& other)                                                                                                    \
-		:current_field_id_(other.current_field_id_), data_(other.data_)                                                   \
-	{                                                                                                                     \
-		other.current_field_id_ = 0;                                                                                      \
-		other.data_ = nullptr;                                                                                            \
-	}                                                                                                                     \
-                                                                                                                          \
 	NAME& operator=(const NAME& other)                                                                                    \
 	{                                                                                                                     \
 		if (this == &other)                                                                                               \
@@ -58,33 +54,17 @@ public:                                                                         
 		}                                                                                                                 \
 		return *this;                                                                                                     \
 	}                                                                                                                     \
-                                                                                                                          \
-	NAME& operator=(NAME&& other)                                                                                         \
-	{                                                                                                                     \
-		if (this == &other)                                                                                               \
-		{                                                                                                                 \
-			return *this;                                                                                                 \
-		}                                                                                                                 \
-		else                                                                                                              \
-		{                                                                                                                 \
-            clear();                                                                                                      \
-			current_field_id_ = other.current_field_id_;                                                                  \
-			data_ = other.data_;                                                                                          \
-			other.current_field_id_ = 0;                                                                                  \
-			other.data_ = nullptr;                                                                                        \
-        }                                                                                                                 \
-		return *this;                                                                                                     \
-	}                                                                                                                     \
 private:                                                                                                                  \
     template<size_t id, bool dummy = true>                                                                                \
     struct __proto_helper                                                                                                 \
     {                                                                                                                     \
+        static constexpr size_t getMaxDataSize()  {return 0;};                                                            \
         static size_t encode(const class_type* ptr, void* buffer)  {return 0;};                                           \
         static size_t decode(class_type* ptr, const void* buffer, size_t length) {return 0;};                             \
 		static void copy(class_type* ptr, const class_type* other_ptr) {return;};                                         \
         static size_t encoded_size(const class_type* ptr) {return 0;};                                                    \
         static void create(class_type* ptr) {return;};                                                                    \
-        static void destroy(class_type* ptr) {return;};                                                                   \
+        static void destroy(class_type* ptr) {ptr->current_field_id_ = 0; return;};                                       \
         static constexpr size_t count()                                                                                   \
         {                                                                                                                 \
             return 0;                                                                                                     \
@@ -109,9 +89,15 @@ private:                                                                        
     template<bool dummy>                                                                                                  \
     struct __proto_helper<ID, dummy>                                                                                      \
     {                                                                                                                     \
+        static constexpr size_t getMaxDataSize()                                                                          \
+        {                                                                                                                 \
+			const size_t current_size = sizeof(proto_entry<ID>::proto_type);                                              \
+            const size_t next_size =  __proto_helper<ID + 1>::getMaxDataSize();                                           \
+            return current_size > next_size ? current_size : next_size;                                                   \
+        }                                                                                                                 \
         static void create(class_type* ptr)                                                                               \
         {                                                                                                                 \
-            ptr->data_ = new proto_entry<ID>::proto_type();                                                               \
+            new (ptr->data_) proto_entry<ID>::proto_type();                                                               \
             ptr->current_field_id_ = ID;                                                                                  \
         };                                                                                                                \
                                                                                                                           \
@@ -121,7 +107,7 @@ private:                                                                        
             {                                                                                                             \
                 return __proto_helper<ID+1>::destroy(ptr);                                                                \
             }                                                                                                             \
-            delete static_cast<proto_entry<ID>*>(ptr->data_);                                                             \
+            protostruct::ProtounionBase::destroyAt(&(ptr->FIELD_NAME()));                                                 \
             ptr->current_field_id_ = 0;                                                                                   \
         };                                                                                                                \
                                                                                                                           \
@@ -161,7 +147,7 @@ private:                                                                        
             {                                                                                                             \
                 return  __proto_helper<ID+1>::encoded_size(ptr);                                                          \
             }                                                                                                             \
-            return ptr->FIELD_NAME().encodedSize();                                                                      \
+            return ptr->FIELD_NAME().encodedSize();                                                                       \
         };                                                                                                                \
                                                                                                                           \
         static constexpr size_t count()                                                                                   \
@@ -178,12 +164,14 @@ public:                                                                         
             clear();                                                                                                      \
             __proto_helper<ID>::create(this);                                                                             \
         }                                                                                                                 \
-        return *static_cast<proto_entry<ID>::proto_type*>(data_);                                                         \
+		void* data = data_;                                                                                               \
+        return *static_cast<proto_entry<ID>::proto_type*>(data);                                                          \
     };                                                                                                                    \
                                                                                                                           \
     const proto_entry<ID>::proto_type& FIELD_NAME() const                                                                 \
     {                                                                                                                     \
-        return *static_cast<const proto_entry<ID>::proto_type*>(data_);                                                   \
+		const void* data = data_;                                                                                         \
+        return *static_cast<const proto_entry<ID>::proto_type*>(data);                                                    \
     };                                                                                                                    \
                                                                                                                           \
                                                                                                                           \
@@ -220,7 +208,8 @@ public:                                                                         
         return bytes_read + opt_bytes_read;                                                                               \
     };                                                                                                                    \
     size_t encodedSize() const {return current_field_id_.encodedSize() +__proto_helper<1>::encoded_size(this);};          \
-    static constexpr  size_t fieldCount(){ return __proto_helper<1>::count();};                                           \
+    static constexpr size_t fieldCount(){ return __proto_helper<1>::count();};                                            \
+	static constexpr const size_t MAX_DATA_SIZE = __proto_helper<1>::getMaxDataSize();                                    \
     void clear() {__proto_helper<1>::destroy(this);};                                                                     \
     void copy(const class_type* other)                                                                                    \
     {                                                                                                                     \
@@ -231,7 +220,8 @@ public:                                                                         
 		clear();                                                                                                          \
 		__proto_helper<1>::copy(this, other);                                                                             \
 	}                                                                                                                     \
-                                                                                                                          \
+private:                                                                                                                  \
+    uint8_t data_[MAX_DATA_SIZE];                                                                                         \
 };
 
 #endif
